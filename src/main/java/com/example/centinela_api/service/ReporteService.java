@@ -2,6 +2,8 @@ package com.example.centinela_api.service;
 
 import com.example.centinela_api.modelos.Reporte;
 import com.example.centinela_api.interfaces.IReporte;
+import com.example.centinela_api.modelos.Usuario;
+import com.example.centinela_api.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +16,9 @@ public class ReporteService {
     @Autowired
     private IReporte data;
 
+    @Autowired
+    private UsuarioService usuarioService;
+
     public List<Reporte> findAll() {
         return data.findAll();
     }
@@ -23,6 +28,15 @@ public class ReporteService {
     }
 
     public Reporte save(Reporte reporte) {
+        // Ensure usuario is a managed entity (avoid transient reference)
+        if (reporte.getUsuario() == null || reporte.getUsuario().getUsuarioId() == null) {
+            throw new IllegalArgumentException("El reporte debe incluir usuario con usuarioId");
+        }
+
+        Integer uid = reporte.getUsuario().getUsuarioId();
+        Usuario u = usuarioService.findById(uid).orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado: " + uid));
+        reporte.setUsuario(u);
+
         return data.save(reporte);
     }
 
@@ -40,7 +54,12 @@ public class ReporteService {
             reporte.setFoto(reporteDetails.getFoto());
             reporte.setTipo(reporteDetails.getTipo());
             reporte.setEstado(reporteDetails.getEstado());
-            reporte.setUsuario(reporteDetails.getUsuario());
+            // Resolve usuario to managed entity when updating
+            if (reporteDetails.getUsuario() != null && reporteDetails.getUsuario().getUsuarioId() != null) {
+                Integer uid = reporteDetails.getUsuario().getUsuarioId();
+                Usuario u = usuarioService.findById(uid).orElse(null);
+                reporte.setUsuario(u);
+            }
             return data.save(reporte);
         } else {
             return null;

@@ -29,9 +29,13 @@ public class ReporteController {
     }
 
     @PostMapping
-    public ResponseEntity<Reporte> createReporte(@RequestBody Reporte reporte) {
-        Reporte nuevo = reporteService.save(reporte);
-        return new ResponseEntity<>(nuevo, HttpStatus.CREATED);
+    public ResponseEntity<?> createReporte(@RequestBody Reporte reporte) {
+        try {
+            Reporte nuevo = reporteService.save(reporte);
+            return new ResponseEntity<>(nuevo, HttpStatus.CREATED);
+        } catch (IllegalArgumentException ex) {
+            return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
     @PutMapping("/{id}")

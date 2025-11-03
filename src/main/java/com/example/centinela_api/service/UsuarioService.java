@@ -4,6 +4,7 @@ import com.example.centinela_api.modelos.Usuario;
 import com.example.centinela_api.interfaces.IUsuario;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,6 +14,9 @@ public class UsuarioService {
 
     @Autowired
     IUsuario data;
+
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
 
 
     public List<Usuario> findAll( ){
@@ -36,7 +40,13 @@ public class UsuarioService {
 
 
     public Usuario save(Usuario usuario) {
-        // Lógica de ENCRIPTACIÓN DE CONTRASEÑA
+        // Si la contraseña no está encriptada (no comienza con $2a/$2b), encriptarla
+        if (usuario.getContrasena() != null) {
+            String stored = usuario.getContrasena();
+            if (!(stored.startsWith("$2a$") || stored.startsWith("$2b$") || stored.startsWith("$2y$"))) {
+                usuario.setContrasena(passwordEncoder.encode(stored));
+            }
+        }
         return data.save(usuario);
     }
 
@@ -55,7 +65,12 @@ public class UsuarioService {
             usuario.setCorreo(usuarioDetails.getCorreo());
             if (usuarioDetails.getContrasena() != null) {
                 // ¡IMPORTANTE! Procesar/Encriptar aquí
-                usuario.setContrasena(usuarioDetails.getContrasena());
+                String newPass = usuarioDetails.getContrasena();
+                if (!(newPass.startsWith("$2a$") || newPass.startsWith("$2b$") || newPass.startsWith("$2y$"))) {
+                    usuario.setContrasena(passwordEncoder.encode(newPass));
+                } else {
+                    usuario.setContrasena(newPass);
+                }
             }
             usuario.setTelefono(usuarioDetails.getTelefono());
             usuario.setDepartamento(usuarioDetails.getDepartamento());
@@ -66,5 +81,31 @@ public class UsuarioService {
         } else {
             return null;
         }
+    }
+
+    /**
+     * Autentica un usuario por correo y contraseña.
+     * Si la contraseña en DB está en texto plano y coincide, la actualiza a BCrypt.
+     */
+    public Optional<Usuario> authenticate(String correo, String contrasena) {
+        Optional<Usuario> opt = data.findByCorreo(correo);
+        if (opt.isEmpty()) return Optional.empty();
+        Usuario u = opt.get();
+        String stored = u.getContrasena();
+        if (stored == null) return Optional.empty();
+
+        boolean matches = false;
+        if (stored.startsWith("$2a$") || stored.startsWith("$2b$") || stored.startsWith("$2y$")) {
+            matches = passwordEncoder.matches(contrasena, stored);
+        } else {
+            // contraseña almacenada en texto plano: comparar y actualizar a BCrypt
+            if (stored.equals(contrasena)) {
+                matches = true;
+                u.setContrasena(passwordEncoder.encode(contrasena));
+                data.save(u);
+            }
+        }
+
+        return matches ? Optional.of(u) : Optional.empty();
     }
 }

@@ -19,7 +19,7 @@ public class Reporte {
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = TipoReporteAttributeConverter.class)
     private TipoReporte tipo;
 
     private String descripcion;

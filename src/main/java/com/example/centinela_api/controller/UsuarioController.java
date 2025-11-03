@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
+import com.example.centinela_api.modelos.LoginRequest;
 
 @RestController
 @RequestMapping("/api/usuarios") // URL base: http://localhost:8080/api/usuarios
@@ -58,6 +59,22 @@ public class UsuarioController {
         Usuario nuevoUsuario = usuarioService.save(usuario);
         // Devuelve 201 CREATED y el objeto creado
         return new ResponseEntity<>(nuevoUsuario, HttpStatus.CREATED);
+    }
+
+    // ==========================================================
+    // 6. LOGIN (AUTENTICACIÓN)
+    // ==========================================================
+    // POST http://localhost:8080/api/usuarios/login
+    @PostMapping("/login")
+    public ResponseEntity<Usuario> login(@RequestBody LoginRequest request) {
+        Optional<Usuario> opt = usuarioService.authenticate(request.getCorreo(), request.getContrasena());
+        if (opt.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        Usuario usuario = opt.get();
+        // No devolver la contraseña
+        usuario.setContrasena(null);
+        return new ResponseEntity<>(usuario, HttpStatus.OK);
     }
 
     // ==========================================================
