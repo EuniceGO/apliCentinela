@@ -1,11 +1,13 @@
 package com.example.centinela_api.modelos;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import jakarta.persistence.*;
- 
+
 
 @Entity
 @Data
 @Table(name = "Alertas")
+
 public class Alerta {
 
     @Id
@@ -14,8 +16,9 @@ public class Alerta {
     private Integer alertaId;
 
     // Relación ManyToOne con Region (puede ser NULL)
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "region_id")
+
     private Region region;
 
     private String titulo;
@@ -25,7 +28,7 @@ public class Alerta {
     private NivelAlerta nivel = NivelAlerta.Verde;
 
     // Relación con Usuario (id_usuario)
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_usuario")
     private Usuario usuario;
 

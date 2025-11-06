@@ -10,13 +10,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 @RequestMapping("/api/alertas")
 public class AlertaController {
 
     @Autowired
     private AlertaService alertaService;
 
-    @GetMapping
+    @GetMapping("/getAllAlert")
     public ResponseEntity<List<Alerta>> getAllAlertas() {
         return new ResponseEntity<>(alertaService.findAll(), HttpStatus.OK);
     }
@@ -28,7 +29,7 @@ public class AlertaController {
                 .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    @PostMapping
+    @PostMapping("/createAlert")
     public ResponseEntity<Alerta> createAlerta(@RequestBody Alerta alerta) {
         Alerta nuevo = alertaService.save(alerta);
         return new ResponseEntity<>(nuevo, HttpStatus.CREATED);
