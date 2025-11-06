@@ -1,4 +1,5 @@
 package com.example.centinela_api.modelos;
+
 import lombok.Data;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -24,4 +25,12 @@ public class Comentario {
     private Usuario usuario;
 
     private String mensaje;
+
+    /**
+     * 📌 CAMPO AGREGADO: Almacena la fecha y hora de publicación.
+     * No lleva anotaciones de timestamp automáticas para permitir el control manual
+     * desde el Controller/Service.
+     */
+    @Column(name = "fecha")
+    private LocalDateTime fecha;
 }
