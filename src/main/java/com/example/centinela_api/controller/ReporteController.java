@@ -43,7 +43,7 @@ public class ReporteController {
 
     @GetMapping
     public ResponseEntity<List<ReporteDTO>> getAllReportes() {
-        var list = reporteService.findAll();
+        List<Reporte> list = reporteService.getVisibleReportes();
 
         // Ordenar por ID descendente (últimos primero)
         list.sort((r1, r2) -> r2.getReporteId().compareTo(r1.getReporteId()));

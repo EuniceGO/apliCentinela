@@ -39,6 +39,9 @@ public class Reporte {
     @Enumerated(EnumType.STRING)
     private EstadoReporte estado = EstadoReporte.Activo;
 
+    @Column(name = "fecha_hora")
+    private LocalDateTime fechaHora;
+
     // fecha_reporte ya no forma parte del modelo según la nueva estructura
 
     // Enum para el campo 'tipo'

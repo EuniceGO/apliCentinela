@@ -12,8 +12,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ReporteService {
@@ -31,6 +34,26 @@ public class ReporteService {
     
     @Autowired
     private com.example.centinela_api.interfaces.IRegion iRegion;
+
+    @Autowired
+    private com.example.centinela_api.interfaces.IComentario iComentario;
+
+    public List<Reporte> getVisibleReportes() {
+        LocalDateTime today = LocalDate.now().atStartOfDay();
+        List<Reporte> reportes = data.findByFechaHoraBetween(today, LocalDateTime.now());
+
+        LocalDateTime minVisibleTime = LocalDateTime.now().minusMinutes(3);
+
+        return reportes.stream()
+                .filter(r -> {
+                    boolean hasComments = iComentario.countByReporte(r) > 0;
+                    if (hasComments) {
+                        return true;
+                    }
+                    return r.getFechaHora() != null && r.getFechaHora().isAfter(minVisibleTime);
+                })
+                .collect(Collectors.toList());
+    }
 
     // Estadísticas: counts por tipo
     public java.util.List<com.example.centinela_api.modelos.EstadisticaTipoDTO> getCountsByTipo() {
@@ -200,16 +223,20 @@ public class ReporteService {
      */
     @Transactional
     public Reporte createFromDto(com.example.centinela_api.modelos.CreateReporteRequest req) {
-        if (req == null) throw new IllegalArgumentException("Request body vacío");
+        Reporte r = new Reporte();
+        r.setFechaHora(LocalDateTime.now());
 
-        Reporte reporte = new Reporte();
-        reporte.setDescripcion(req.getDescripcion());
-        reporte.setLatitud(req.getLatitud());
-        reporte.setLongitud(req.getLongitud());
-        reporte.setEstado(Reporte.EstadoReporte.Activo);
+        if (req.getDescripcion() == null || req.getDescripcion().isBlank()) {
+            throw new IllegalArgumentException("La descripción no puede estar vacía.");
+        }
+
+        r.setDescripcion(req.getDescripcion());
+        r.setLatitud(req.getLatitud());
+        r.setLongitud(req.getLongitud());
+        r.setEstado(Reporte.EstadoReporte.Activo);
         if (req.getEstado() != null) {
             try {
-                reporte.setEstado(Reporte.EstadoReporte.valueOf(req.getEstado()));
+                r.setEstado(Reporte.EstadoReporte.valueOf(req.getEstado()));
             } catch (IllegalArgumentException e) {
                 // ignore and keep default
             }
@@ -218,7 +245,7 @@ public class ReporteService {
         // tipo
         if (req.getTipo() != null) {
             try {
-                reporte.setTipo(Reporte.TipoReporte.valueOf(req.getTipo()));
+                r.setTipo(Reporte.TipoReporte.valueOf(req.getTipo()));
             } catch (IllegalArgumentException ex) {
                 throw new IllegalArgumentException("Tipo de reporte inválido: " + req.getTipo());
             }
@@ -230,7 +257,7 @@ public class ReporteService {
         }
         Integer uid = req.getUsuario().getUsuarioId();
         Usuario u = usuarioService.findById(uid).orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado: " + uid));
-        reporte.setUsuario(u);
+        r.setUsuario(u);
 
         // foto: if fotoUrl provided, save FotoReporte first
         if (req.getFotoUrl() != null && !req.getFotoUrl().isBlank()) {
@@ -243,10 +270,10 @@ public class ReporteService {
             } else {
                 logger.info("FotoReporte saved id={}", saved.getFotoId());
             }
-            reporte.setFoto(saved);
+            r.setFoto(saved);
         }
 
-        return data.save(reporte);
+        return data.save(r);
     }
 
     public void deleteById(Integer id) {
